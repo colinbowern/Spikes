@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "Source\UI\UI.csproj", "{E4A2CEE4-6FD8-4E6C-8251-0109357952D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Source\Tests\Tests.csproj", "{51DCC820-6E8E-4245-B65F-05BE8E6819C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6DC9D19E-46AC-40BF-8CBB-077C7A35D8A2}"
+	ProjectSection(SolutionItems) = preProject
+		DotNetBoilerplate.msbuild = DotNetBoilerplate.msbuild
+		README.txt = README.txt
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E4A2CEE4-6FD8-4E6C-8251-0109357952D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4A2CEE4-6FD8-4E6C-8251-0109357952D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4A2CEE4-6FD8-4E6C-8251-0109357952D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4A2CEE4-6FD8-4E6C-8251-0109357952D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51DCC820-6E8E-4245-B65F-05BE8E6819C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51DCC820-6E8E-4245-B65F-05BE8E6819C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51DCC820-6E8E-4245-B65F-05BE8E6819C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51DCC820-6E8E-4245-B65F-05BE8E6819C6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

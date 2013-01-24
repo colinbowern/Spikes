@@ -1,0 +1,176 @@
+<Project DefaultTargets="Compile" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <!-- Properties -->
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <Platform>AnyCPU</Platform>
+    <BuildInParallel Condition="'$(BuildInParallel)'==''">true</BuildInParallel>
+    <TrackFileAccess>false</TrackFileAccess>
+    <xUnitPackageDir>$([System.IO.Directory]::GetDirectories('packages', 'xunit.?.*'))</xUnitPackageDir>
+    <FxCopExecutable>$(MSBuildProgramFiles32)\Microsoft FxCop 10.0\FxCopCmd.exe</FxCopExecutable>
+    <FxCopExecutable Condition="!Exists('$(FxCopExecutable)')">$(MSBuildProgramFiles32)\Microsoft Visual Studio 11.0\Team Tools\Static Analysis Tools\FxCop\FxCopCmd.exe</FxCopExecutable>
+    <FxCopExecutable Condition="!Exists('$(FxCopExecutable)')">$(MSBuildProgramFiles32)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\FxCopCmd.exe</FxCopExecutable>
+    <BuildTimestamp>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm"))</BuildTimestamp>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(xUnitPackageDir)\lib\net20\XUnit.Runner.MSBuild.dll" TaskName="Xunit.Runner.MSBuild.xunit"/>
+  <UsingTask AssemblyFile="Tools\MSBuildExtensionPack\MSBuild.ExtensionPack.dll" TaskName="MSBuild.ExtensionPack.CodeQuality.FxCop" />
+  <UsingTask AssemblyFile="Tools\MSBuildExtensionPack\MSBuild.ExtensionPack.dll" TaskName="MSBuild.ExtensionPack.FileSystem.File" />
+  <UsingTask AssemblyFile="Tools\MSBuildExtensionPack\MSBuild.ExtensionPack.dll" TaskName="MSBuild.ExtensionPack.Framework.DynamicExecute" />
+  <UsingTask AssemblyFile="Tools\MSBuildExtensionPack\MSBuild.ExtensionPack.dll" TaskName="MSBuild.ExtensionPack.Xml.XmlFile" />
+  <UsingTask AssemblyFile="Tools\MSBuildCommunityTasks\MSBuild.Community.Tasks.dll" TaskName="MSBuild.Community.Tasks.XmlRead" />
+
+  <PropertyGroup Condition="'$(BuildVersion)' == ''">
+    <BuildVersion>$(BUILD_NUMBER)</BuildVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildConfiguration)' == '' AND '$(TEAMCITY_BUILDCONF_NAME)' != ''">
+    <BuildConfiguration>$(TEAMCITY_BUILDCONF_NAME) $(Configuration) $(ComputerName) $(BuildTimestamp)</BuildConfiguration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BuildConfiguration)' == ''">
+    <BuildConfiguration>Private $(Configuration) $(ComputerName) $(BuildTimestamp)</BuildConfiguration>
+  </PropertyGroup>
+
+  <!-- Targets: Clean, Compile, Test, Analyze, Package -->
+  <Target Name="Clean">
+    <RemoveDir Directories="Build" />
+    <MSBuild
+        Projects="DotNetBoilerplate.sln"
+        Targets="Clean"
+        Properties="Configuration=$(Configuration);TrackFileAccess=$(TrackFileAccess)"/>
+  </Target>
+
+  <Target Name="_SetBuildVersion" Condition="'$(BuildVersion)' != ''">
+    <MSBuild.ExtensionPack.Framework.DynamicExecute TaskAction="Run"
+                                    Inputs="string arg"
+                                    Input1="$(BuildVersion)"
+                                    Outputs="string result"
+                                    UsingNamespaces="System.Text.RegularExpressions"
+                                    Code="result = Regex.Match(arg, @%22(\d+\.\d+)\.\d+\.\d+%22).Groups[1].Value;">
+      <Output TaskParameter="Output1" PropertyName="AssemblyVersion"/>
+    </MSBuild.ExtensionPack.Framework.DynamicExecute>
+    <MSBuild.ExtensionPack.FileSystem.File
+        TaskAction="Replace"
+        RegexPattern='AssemblyVersion\("(\d+\.\d+\.\d+)\.\d+"\)'
+        Replacement='AssemblyVersion("$(AssemblyVersion).0.0")'
+        Files="Source\SolutionAssemblyInfo.cs" />
+    <MSBuild.ExtensionPack.FileSystem.File
+        TaskAction="Replace"
+        RegexPattern='AssemblyFileVersion\("(\d+\.\d+\.\d+)\.\d+"\)'
+        Replacement='AssemblyFileVersion("$(BuildVersion)")'
+        Files="Source\SolutionAssemblyInfo.cs" />
+  </Target>
+
+  <Target Name="_SetBuildConfiguration">
+    <MSBuild.ExtensionPack.FileSystem.File
+        TaskAction="Replace"
+        RegexPattern='AssemblyConfiguration\("(.+)"\)'
+        Replacement='AssemblyConfiguration("$(BuildConfiguration)")'
+        Files="Source\SolutionAssemblyInfo.cs" />
+  </Target>
+
+  <Target Name="_BuildSolutionFile">
+    <MakeDir Directories="Build\Results" />
+    <MSBuild
+        Projects="DotNetBoilerplate.sln"
+        Targets="Build"
+        BuildInParallel="$(BuildInParallel)"
+        Properties="Configuration=$(Configuration);TrackFileAccess=$(TrackFileAccess)">
+      <Output TaskParameter="TargetOutputs" ItemName="AssembliesBuiltByChildProjects"/>
+    </MSBuild>
+    <Message Text="@(AssembliesBuiltByChildProjects)" />
+    <WriteLinesToFile File="Build\Results\SolutionOutput.txt" Lines="@(AssembliesBuiltByChildProjects)" Overwrite="true" />
+  </Target>
+
+
+  <Target Name="Compile" DependsOnTargets="Clean;_SetBuildVersion;_SetBuildConfiguration;_BuildSolutionFile" />
+
+  <Target Name="_CheckIfTestAssembliesExist">
+    <ItemGroup>
+      <TestAssemblies Include="Source\*Tests\bin\$(Configuration)\*Tests.dll">
+        <TestContainerPrefix>/testcontainer:</TestContainerPrefix>
+      </TestAssemblies>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_BuildTestAssembliesList" DependsOnTargets="_CheckIfTestAssembliesExist">
+    <CallTarget Targets="Compile" Condition="'@(TestAssemblies)' == ''" />
+    <ItemGroup Condition="$(BuildConfiguration.Contains('Commit'))">
+      <TestAssemblies Remove="@(TestAssemblies)" />
+      <TestAssemblies Include="Source\UnitTests\bin\$(Configuration)\*Tests.dll">
+        <TestContainerPrefix>/testcontainer:</TestContainerPrefix>
+      </TestAssemblies>
+    </ItemGroup>
+    <ItemGroup Condition="$(BuildConfiguration.Contains('Integration'))">
+      <TestAssemblies Remove="@(TestAssemblies)" />
+      <TestAssemblies Include="Source\IntegrationTests\bin\$(Configuration)\*Tests.dll">
+        <TestContainerPrefix>/testcontainer:</TestContainerPrefix>
+      </TestAssemblies>
+    </ItemGroup>
+    <ItemGroup Condition="'@(TestAssemblies)' == ''">
+      <TestAssemblies Include="Source\*Tests\bin\$(Configuration)\*Tests.dll">
+        <TestContainerPrefix>/testcontainer:</TestContainerPrefix>
+      </TestAssemblies>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="Test" DependsOnTargets="_BuildTestAssembliesList">
+    <MakeDir Directories="Build\Results" />
+    <xunit
+        Assemblies="@(TestAssemblies)"
+        Xml="Build\Results\TestResults.xml"
+        Html="Build\Results\TestResults.html"/>
+  </Target>
+
+  <Target Name="Analyze">
+    <MakeDir Directories="Build\Results" />
+
+    <CallTarget Targets="Compile" Condition="!Exists('Build\Results\SolutionOutput.txt')" />
+    <ReadLinesFromFile File="Build\Results\SolutionOutput.txt">
+      <Output TaskParameter="Lines" ItemName="AssembliesBuiltByChildProjects"/>
+    </ReadLinesFromFile>
+
+    <Error Condition="!Exists('$(FxCopExecutable)')" Text="Please install Visual Studio Premium Edition or a standalone copy of FxCop" />
+    <MSBuild.ExtensionPack.CodeQuality.FxCop
+        TaskAction="Analyse"
+        FxCopPath="$(FxCopExecutable)"
+        Files="@(AssembliesBuiltByChildProjects)"
+        IgnoreGeneratedCode="true"
+        SearchGac="True"
+        AssemblyCompareMode="StrongNameIgnoringVersion"
+        Ruleset="=Source\Solution.ruleset"
+        OutputFile="Build\Results\CodeAnalysis.xml">
+      <Output TaskParameter="AnalysisFailed" PropertyName="AnalysisFailed"/>
+    </MSBuild.ExtensionPack.CodeQuality.FxCop>
+
+    <Message Text="##teamcity[importData type='FxCop' path='Build\Results\CodeAnalysis.xml']" Condition="'$(TEAMCITY_VERSION)' != ''" />
+    <PropertyGroup>
+      <FxCopIssueCount>0</FxCopIssueCount>
+    </PropertyGroup>
+    <MSBuild.Community.Tasks.XmlRead ContinueOnError="True" XmlFileName="Build\Results\CodeAnalysis.xml" XPath="string(count(//Issue))">
+      <Output TaskParameter="Value" PropertyName="FxCopIssueCount" />
+    </MSBuild.Community.Tasks.XmlRead>
+
+    <Message Text="##teamcity[message status='WARNING' text='Code Analysis Issues: $(FxCopIssueCount)']" Condition="'$(TEAMCITY_VERSION)' != '' AND '$(AnalysisFailed)' == 'True'" />
+    <Error Text="Code Analysis Issues: $(FxCopIssueCount)" Condition="'$(AnalysisFailed)' == 'True' AND '$(TEAMCITY_VERSION)' == ''" />
+  </Target>
+
+  <Target Name="Package">
+    <MakeDir Directories="Build\Packages" />
+
+    <PropertyGroup>
+      <PackageFolder>$([System.IO.Path]::GetFullPath('Build\Packages\'))</PackageFolder>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectsToBuild Include="Source\UI\UI.csproj">
+        <Properties>Configuration=$(Configuration);Platform=$(Platform);PackageLocation=$(PackageFolder)DotNetBoilerplate.zip</Properties>
+      </ProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild
+        Projects="@(ProjectsToBuild)"
+        Targets="Package"
+        BuildInParallel="$(BuildInParallel)"
+        Properties="TrackFileAccess=$(TrackFileAccess);RunCodeAnalysis=false" />
+  </Target>
+</Project>
