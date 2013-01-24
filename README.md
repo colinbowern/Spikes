@@ -1,1 +1,1 @@
-Companion files to blog posts from (ColinBowern.com)[www.colinbowern.com]
+Companion files to blog posts from [ColinBowern.com](http://www.colinbowern.com)
