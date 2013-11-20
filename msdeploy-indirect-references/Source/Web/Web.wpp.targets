@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Because Visual Studio caches .targets files, changes made this file will not be effective until the next time Visual Studio is opened. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CollectFilesFromReferenceDependsOn>
+      CollectIndirectReferences;
+      $(CollectFilesFromReferenceDependsOn);
+    </CollectFilesFromReferenceDependsOn>
+  </PropertyGroup>
+  <Target Name="CollectIndirectReferences">
+    <ItemGroup>
+      <IndirectReferences Include="..\IndirectReference*\bin\$(Configuration)\*" />
+    </ItemGroup>
+    <GetPublishingLocalizedString
+      ID="PublishLocalizedString_GatherSpecificOutputsFromProject"
+      ArgumentCount="1"
+      Arguments="IndirectReferences"
+      LogType="Message" />
+    <Message Text="@(IndirectReferences->'%(RelativeDir)%(FileName)%(Extension) to bin\%(FileName)%(Extension)', '%0A')" Importance="low" />
+    <ItemGroup>
+      <FilesForPackagingFromProject Include="@(IndirectReferences)">
+        <DestinationRelativePath>bin\%(Filename)%(Extension)</DestinationRelativePath>
+        <FromTarget>CollectIndirectReferences</FromTarget>
+        <Category>Run</Category>
+      </FilesForPackagingFromProject>
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,70 @@
+# Compiled Source Code
+######################
+bin/
+obj/
+*.com
+*.class
+*.dll
+*.exe
+*.pdb
+*.tlb
+*.dll.config
+Build/
+
+# User State
+############
+*.cache
+*.user
+*.suo
+*.sln.cache
+*.sln.docstates
+*.dbmdl
+_ReSharper*
+*.vspscc
+*.vssscc
+
+# Visual Studio Profiler
+########################
+*.psess
+*.vsp
+*.vspx
+
+# Visual Studio Upgrade Files
+#############################
+UpgradeLog.XML
+_UpgradeReport_Files/
+Backup*/
+
+# Test Artifacts
+################
+TestResults/
+
+# Logs
+######
+*.Publish.xml
+*.log
+*.tmp
+log.txt
+Import Schema Logs/
+Source/UI/log/
+
+# Packages
+##########
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.csx
+*.build.csdef
+
+# Operating System Files
+########################
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+
