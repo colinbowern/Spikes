@@ -16,10 +16,10 @@
       ArgumentCount="1"
       Arguments="IndirectReferences"
       LogType="Message" />
-    <Message Text="@(IndirectReferences->'%(RelativeDir)%(FileName)%(Extension) to bin\%(FileName)%(Extension)', '%0A')" Importance="low" />
+    <Message Text="@(IndirectReferences->'%(RelativeDir)%(Filename)%(Extension) to bin\%(Filename)%(Extension)', '%0A')" Importance="low" />
     <ItemGroup>
       <FilesForPackagingFromProject Include="@(IndirectReferences)">
-        <DestinationRelativePath>bin\%(Filename)%(Extension)</DestinationRelativePath>
+        <DestinationRelativePath>$(OutDir)%(Filename)%(Extension)</DestinationRelativePath>
         <FromTarget>CollectIndirectReferences</FromTarget>
         <Category>Run</Category>
       </FilesForPackagingFromProject>
